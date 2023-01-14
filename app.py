@@ -1,6 +1,6 @@
 # Librerias FastAPI
 from fastapi import FastAPI,Path,Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse,JSONResponse
 
 # Librerias Pydantic
 
@@ -86,7 +86,7 @@ def message():
 # retorrnar el listado de las peliculas
 @app.get('/get_movies', tags=['Movies'])
 def get_movies():
-    return movies
+    return JSONResponse(content=movies)
 
 # Retornar una pelicula en particular por el ID
 # Path validation se realiza medinate Path de fastapi
@@ -102,15 +102,15 @@ def get_movie(id:int=Path(ge=1,le=100)):
 def get_movies_by_category(category:str=Query(min_length=4, max_length=15), year:str=Query(min_length=3,max_length=4)):
     for items in movies:
         if (items["title"]==category and items['year']==year):
-            return items
-    return []
+            return JSONResponse(content=items)
+    return JSONResponse(content=[])
 
 # Crear una pelicula medinate el método post de HTTP
 
 @app.post('/create_movie/',tags=['Movies'])
 def create_movie(movie:Movie):
     movies.append(movie)
-    return movies
+    return JSONResponse(content={"message":"Se registró la pelicula"})
 
 
 #Actualización de Items
