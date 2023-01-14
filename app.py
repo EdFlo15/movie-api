@@ -1,5 +1,5 @@
 # Librerias FastAPI
-from fastapi import FastAPI
+from fastapi import FastAPI,Path,Query
 from fastapi.responses import HTMLResponse
 
 # Librerias Pydantic
@@ -45,7 +45,7 @@ movies=[
 		"overview": "En un exuberante planeta llamado Pandora viven los Na'vi, seres que ...",
 		"year": "2009",
 		"rating": 7.8,
-		"category": "Acción"
+		"category": "Accion"
 	},
      {
 		"id": 2,
@@ -53,7 +53,7 @@ movies=[
 		"overview": "En un exuberante planeta llamado Pandora viven los Na'vi, seres que ...",
 		"year": "2020",
 		"rating": 7.8,
-		"category": "Acción"
+		"category": "Accion"
 	},
     {
 		"id": 3,
@@ -61,8 +61,17 @@ movies=[
 		"overview": "Bruce lee",
 		"year": "2022",
 		"rating": 7.8,
-		"category": "Acción"
+		"category": "Accion"
+	},
+     {
+		"id": 4,
+		"title": "Drama",
+		"overview": "The love",
+		"year": "2009",
+		"rating": 7.8,
+		"category": "Drama"
 	}
+
 ]
 
 # pruebas básica de home
@@ -80,8 +89,9 @@ def get_movies():
     return movies
 
 # Retornar una pelicula en particular por el ID
+# Path validation se realiza medinate Path de fastapi
 @app.get('/get_movie/{id}', tags=['Movies'])
-def get_movie(id:int):
+def get_movie(id:int=Path(ge=1,le=100)):
     for items in movies:
         if items["id"]==id:
             return items 
@@ -89,7 +99,7 @@ def get_movie(id:int):
 
 # retornar una movies de peliculas por categoria y año.
 @app.get('/movies/', tags=['Movies'])
-def get_movies_by_category(category:str, year:str):
+def get_movies_by_category(category:str=Query(min_length=4, max_length=15), year:str=Query(min_length=3,max_length=4)):
     for items in movies:
         if (items["title"]==category and items['year']==year):
             return items
