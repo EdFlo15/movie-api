@@ -1,7 +1,9 @@
 # Librerias FastAPI
-from fastapi import FastAPI,Path,Query
+from fastapi import Depends, FastAPI,Path,Query,Request,HTTPException
 from fastapi.responses import HTMLResponse,JSONResponse
+from fastapi.security import HTTPBearer
 
+from jwt_manager import create_token,validate_token
 # Librerias Pydantic
 
 from pydantic import BaseModel
@@ -9,12 +11,24 @@ from pydantic import Field
 
 # liberias python
 
-from typing import Optional
+from typing import List, Optional
 
 app=FastAPI()
 app.title="Aplicación con FastAPI"
 
 # reación de modelo
+
+class JWTBearer(HTTPBearer):
+    async def __call__(self,request:Request):
+        auth= await super().__call__(request)
+        data=validate_token(auth.credentials)
+        if data['email']!='admin@gmail.com':
+            raise HTTPException(status_code=403,detail="NOT VALID CREDENCIAL")
+
+
+class User(BaseModel):
+    email:str
+    password:str
 
 class Movie(BaseModel):
     id:Optional[int]=None
@@ -83,38 +97,43 @@ def message():
         """
         )
 
+@app.post('/login',tags=['auth'])
+def login(user:User):
+    if user.email == "admin@gmail.com" and user.password =="admin":
+        token:str=create_token(user.dict())
+        return JSONResponse(content=token, status_code=200)
+
+
 # retorrnar el listado de las peliculas
-@app.get('/get_movies', tags=['Movies'])
-def get_movies():
-    return JSONResponse(content=movies)
+@app.get('/movies', tags=['Movies'], response_model=List[Movie], status_code=200,dependencies=[Depends(JWTBearer())])
+def get_movies() -> List[Movie]:
+    return JSONResponse(content=movies, status_code=200)
 
 # Retornar una pelicula en particular por el ID
 # Path validation se realiza medinate Path de fastapi
-@app.get('/get_movie/{id}', tags=['Movies'])
-def get_movie(id:int=Path(ge=1,le=100)):
+@app.get('/get_movie/{id}', tags=['Movies'], response_model=Movie)
+def get_movie(id:int=Path(ge=1,le=100))->Movie:
     for items in movies:
         if items["id"]==id:
-            return items 
-    return []
+            return JSONResponse(content=items,status_code=200) 
+    return JSONResponse(content=[],status_code=404)
 
 # retornar una movies de peliculas por categoria y año.
-@app.get('/movies/', tags=['Movies'])
-def get_movies_by_category(category:str=Query(min_length=4, max_length=15), year:str=Query(min_length=3,max_length=4)):
-    for items in movies:
-        if (items["title"]==category and items['year']==year):
-            return JSONResponse(content=items)
-    return JSONResponse(content=[])
+@app.get('/movies/',tags=['Movies'], response_model=list[Movie])
+def get_movies_by_category(category:str=Query(min_length=4, max_length=15))->List[Movie]:
+    data=[ item for item in movies if item['category']==category]
+    return JSONResponse(content=data)
 
 # Crear una pelicula medinate el método post de HTTP
 
-@app.post('/create_movie/',tags=['Movies'])
+@app.post('/create_movie/',tags=['Movies'], response_model=dict, status_code=201)
 def create_movie(movie:Movie):
     movies.append(movie)
-    return JSONResponse(content={"message":"Se registró la pelicula"})
+    return JSONResponse(content={"Message":"Correctly register"}, status_code=201)
 
 
 #Actualización de Items
-@app.put('/update_movies/{id}', tags=['Movies'])
+@app.put('/update_movies/{id}', tags=['Movies'], response_model=dict,status_code=200)
 def update_movie(
     id:int,
     movie:Movie
@@ -126,16 +145,16 @@ def update_movie(
             items['year']=movie.year
             items['rating']=movie.rating
             items['category']=movie.category
-            return movies
+        return JSONResponse(content={"Message":"Update Corrrectly"},status_code=200)
 
 #Eliminacion de Items
 
-@app.delete('/delete_movie/{id}', tags=['Movies'])
+@app.delete('/delete_movie/{id}', tags=['Movies'], response_model=dict, status_code=200)
 def delete_movie(id:int):
     for items in movies:
         if items["id"]==id:
             movies.remove(items)
-    return movies
+    return JSONResponse(content={"Message":"Deleted Corrrectly"},status_code=200)
 
 
 
