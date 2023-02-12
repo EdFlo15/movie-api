@@ -3,7 +3,7 @@ from fastapi import Depends, FastAPI,Path,Query,Request,HTTPException
 from fastapi.responses import HTMLResponse,JSONResponse
 from fastapi.security import HTTPBearer
 
-from jwt_manager import create_token,validate_token
+from utils.jwt_manager import create_token,validate_token
 # Librerias Pydantic
 
 from pydantic import BaseModel
